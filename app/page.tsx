@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef } from "react"
 
 export default function Home() {
@@ -15,19 +14,22 @@ export default function Home() {
     formatted: "00:00",
     ms: 0,
   })
+  // Add state for running timer
   const [runningTimer, setRunningTimer] = useState({
     seconds: "0.00",
     formatted: "00:00",
   })
+  // Add state for battle animation
   const [battleProgress, setBattleProgress] = useState(0)
   const [battleMessages, setBattleMessages] = useState<string[]>([])
 
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const battleIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number | null>(null)
-  const resultsContainerRef = useRef<HTMLDivElement | null>(null)
+  const resultsContainerRef = useRef<HTMLDivElement>(null)
   const preserveTimerRef = useRef<boolean>(false)
 
+  // Battle messages pool
   const attackMessages = [
     "Menyerang server target...",
     "Mengirim paket data...",
@@ -48,28 +50,9 @@ export default function Home() {
 
   // Check system dark mode preference
   useEffect(() => {
-    // Safe check for browser environment
-    if (typeof window === "undefined") return
-
-    // Check system preference
     if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
       setIsDarkMode(true)
-      document.documentElement.classList.add("dark")
     }
-
-    // Listen for system preference changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkMode(e.matches)
-      if (e.matches) {
-        document.documentElement.classList.add("dark")
-      } else {
-        document.documentElement.classList.remove("dark")
-      }
-    }
-
-    mediaQuery.addEventListener("change", handleChange)
-    return () => mediaQuery.removeEventListener("change", handleChange)
   }, [])
 
   // Cleanup timer interval when component unmounts
@@ -84,19 +67,8 @@ export default function Home() {
     }
   }, [])
 
-  // Modifikasi fungsi toggleTheme
   const toggleTheme = () => {
-    console.log("Toggle theme clicked")
-    setIsDarkMode((prev) => {
-      const newValue = !prev
-      // Tambahkan atau hapus class 'dark' dari document.documentElement
-      if (newValue) {
-        document.documentElement.classList.add("dark")
-      } else {
-        document.documentElement.classList.remove("dark")
-      }
-      return newValue
-    })
+    setIsDarkMode(!isDarkMode)
   }
 
   // Function to start the battle animation
@@ -199,21 +171,19 @@ export default function Home() {
     preserveTimerRef.current = true
   }
 
-  // Modifikasi handleSubmit dengan console.log tambahan
+  // Add debugging to track the API response
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Form submitted, domain:", domain)
-
-    if (!domain.trim()) {
-      console.log("Domain empty, returning")
-      return
-    }
+    if (!domain.trim()) return
 
     setLoading(true)
     setError("")
     setResults([])
 
+    // Start the timer when submitting
     startTimer()
+
+    // Start battle animation
     startBattleAnimation()
 
     try {
@@ -224,10 +194,9 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ domain: domain.trim() }),
+        body: JSON.stringify({ domain }),
       })
 
-      console.log("Response status:", response.status)
       const data = await response.json()
       console.log("API Response:", data)
 
@@ -239,34 +208,53 @@ export default function Home() {
         throw new Error("API request failed")
       }
 
+      // Stop the timer when results are received
       stopTimer()
+
+      // Stop battle animation with success
       stopBattleAnimation(true)
 
+      // Save the current timer value to execution time
       setExecutionTime({
         seconds: runningTimer.seconds,
         formatted: runningTimer.formatted,
         ms: startTimeRef.current ? Date.now() - startTimeRef.current : 0,
       })
 
+      // Check if we have results
       if (data.results && Array.isArray(data.results)) {
         if (data.results.length === 0) {
           setError("No results found for this domain in the Wayback Machine archive.")
         } else {
+          // Ensure we're setting the results correctly
+          console.log("Setting results:", data.results)
           setResults(data.results)
         }
+      } else if (data.messageChunks && Array.isArray(data.messageChunks)) {
+        // Fallback to messageChunks if results is not available
+        console.log("Using messageChunks:", data.messageChunks)
+        setResults(data.messageChunks)
       } else {
         throw new Error("Invalid response format from server")
       }
 
-      if (resultsContainerRef.current) {
-        resultsContainerRef.current.scrollIntoView({ behavior: "smooth" })
-      }
+      // Scroll to results after they load
+      setTimeout(() => {
+        if (resultsContainerRef.current) {
+          resultsContainerRef.current.scrollIntoView({ behavior: "smooth" })
+        }
+      }, 100)
     } catch (err) {
       console.error("Error:", err)
       setError(err instanceof Error ? err.message : "An error occurred")
+
+      // Stop the timer on error
       stopTimer()
+
+      // Stop battle animation with failure
       stopBattleAnimation(false)
 
+      // Save the current timer value to execution time
       setExecutionTime({
         seconds: runningTimer.seconds,
         formatted: runningTimer.formatted,
@@ -306,7 +294,7 @@ export default function Home() {
 
     // Alerts and notifications
     notFound: isDarkMode ? "#ef4444" : "#dc2626",
-    notFoundBg: isDarkMode ? "rgba(239, 68, 44, 0.1)" : "rgba(220, 38, 38, 0.05)",
+    notFoundBg: isDarkMode ? "rgba(239, 68, 68, 0.1)" : "rgba(220, 38, 38, 0.05)",
     success: isDarkMode ? "#10b981" : "#059669",
     successBg: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(5, 150, 105, 0.05)",
 
@@ -707,9 +695,6 @@ export default function Home() {
 
   // Get the current timer display values
   const timerDisplay = displayTimer()
-
-  // Add console log for debugging on render
-  console.log("Rendering component, isDarkMode:", isDarkMode)
 
   return (
     <div
