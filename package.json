@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",
     "critters": "^0.0.20",
     "lucide-react": "^0.323.0",
@@ -30,4 +31,3 @@
     "typescript": "^5.3.3"
   }
 }
-
