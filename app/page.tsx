@@ -50,8 +50,17 @@ export default function Home() {
 
   // Check system dark mode preference
   useEffect(() => {
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    // Periksa preferensi sistem dan localStorage
+    const savedTheme = localStorage.getItem("theme")
+    if (
+      savedTheme === "dark" ||
+      (!savedTheme && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    ) {
       setIsDarkMode(true)
+      document.documentElement.classList.add("dark")
+    } else {
+      setIsDarkMode(false)
+      document.documentElement.classList.remove("dark")
     }
   }, [])
 
@@ -76,8 +85,18 @@ export default function Home() {
     }
   }, [])
 
+  // Ganti fungsi toggleTheme
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode)
+    const newMode = !isDarkMode
+    setIsDarkMode(newMode)
+
+    if (newMode) {
+      document.documentElement.classList.add("dark")
+      localStorage.setItem("theme", "dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+      localStorage.setItem("theme", "light")
+    }
   }
 
   // Function to start the battle animation
