@@ -1,58 +1,87 @@
+import { checkDomainHistory } from "../../../lib/wayback-api.js"
 import { NextResponse } from "next/server"
+export const runtime = "edge"
 
 export async function POST(request: Request) {
-  console.log("API route /api/wayback called")
-
   try {
-    const body = await request.json()
+    // Validate request body
+    let body
+    try {
+      body = await request.json()
+    } catch (e) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid request body",
+          details: "Request body must be valid JSON",
+        },
+        { status: 400 },
+      )
+    }
+
     const { domain } = body
 
-    console.log("Request body:", { domain })
-
     if (!domain) {
-      console.log("Domain is required but not provided")
-      return NextResponse.json({ success: false, error: "Domain is required" }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Domain is required",
+        },
+        { status: 400 },
+      )
     }
 
-    // Implementasi sederhana jika wayback-api.js bermasalah
-    // Fungsi ini akan mengembalikan data dummy jika import gagal
+    // Call checkDomainHistory with error handling
     try {
-      // Coba import wayback-api.js
-      const waybackApi = await import("@/lib/wayback-api")
-      console.log("wayback-api.js imported successfully")
+      const results = await checkDomainHistory(domain)
 
-      // Panggil fungsi checkDomainHistory
-      const result = await waybackApi.checkDomainHistory(domain)
-      console.log("checkDomainHistory result:", result)
-
-      return NextResponse.json({
+      // Ensure results is serializable
+      const safeResults = {
         success: true,
-        results: result.messageChunks,
-        executionTime: result.executionTime,
-      })
-    } catch (importError) {
-      console.error("Error importing or using wayback-api.js:", importError)
+        logs: results.logs || [],
+        messageChunks: results.messageChunks || [],
+        executionTime: results.executionTime || {
+          seconds: "0.00",
+          formatted: "00:00:00",
+          ms: 0,
+        },
+      }
 
-      // Fallback ke implementasi sederhana jika import gagal
-      const dummyResults = [
-        `00:00:00 January 1, 2023 ${domain} -> Redirect to https://www.${domain}`,
-        `00:00:00 February 1, 2023 ${domain} -> Redirect to https://www.${domain}/home`,
-        `00:00:00 March 1, 2023 ${domain} -> Redirect to https://www.${domain}/new-home`,
-      ]
+      return NextResponse.json(safeResults)
+    } catch (error) {
+      console.error("Error checking domain history:", error)
 
-      return NextResponse.json({
-        success: true,
-        results: dummyResults,
-        executionTime: { seconds: "1.25", formatted: "00:01", ms: 1250 },
-      })
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to check domain",
+          details: error instanceof Error ? error.message : String(error),
+          logs: [],
+          messageChunks: [],
+          executionTime: {
+            seconds: "0.00",
+            formatted: "00:00:00",
+            ms: 0,
+          },
+        },
+        { status: 500 },
+      )
     }
   } catch (error) {
-    console.error("API Error:", error)
+    console.error("Unexpected error in wayback API route:", error)
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "An unknown error occurred",
-        details: "Failed to check domain with Wayback Machine",
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error),
+        logs: [],
+        messageChunks: [],
+        executionTime: {
+          seconds: "0.00",
+          formatted: "00:00:00",
+          ms: 0,
+        },
       },
       { status: 500 },
     )

@@ -1,12 +1,10 @@
 import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from 'next/font/google'
 import "./globals.css"
-
-const inter = Inter({ subsets: ["latin"] })
+import type { Metadata } from "next"
+import { ThemeProvider } from "../components/theme-provider"
 
 export const metadata: Metadata = {
-  title: "Redirect Checker BajakTeam303",
+  title: "Redirect Checker - BajakTeam303",
   description: "Check domain redirects using Wayback Machine",
 }
 
@@ -17,7 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>{children}</body>
+      <body>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }
+

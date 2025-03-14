@@ -1,11 +1,11 @@
 "use client"
 
-import type * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
+import type { ReactNode } from "react"
 
-type ThemeProviderProps = {
-  children: React.ReactNode
-  attribute?: string
+export interface ThemeProviderProps {
+  children: ReactNode
+  attribute?: "class" | "data-theme" | "data-mode"
   defaultTheme?: string
   enableSystem?: boolean
   disableTransitionOnChange?: boolean

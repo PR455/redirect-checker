@@ -50,28 +50,10 @@ export default function Home() {
 
   // Check system dark mode preference
   useEffect(() => {
-    // Periksa preferensi sistem dan localStorage
-    const savedTheme = localStorage.getItem("theme")
-    if (
-      savedTheme === "dark" ||
-      (!savedTheme && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
       setIsDarkMode(true)
-      document.documentElement.classList.add("dark")
-    } else {
-      setIsDarkMode(false)
-      document.documentElement.classList.remove("dark")
     }
   }, [])
-
-  // Apply dark mode class to HTML element
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }, [isDarkMode])
 
   // Cleanup timer interval when component unmounts
   useEffect(() => {
@@ -85,18 +67,8 @@ export default function Home() {
     }
   }, [])
 
-  // Ganti fungsi toggleTheme
   const toggleTheme = () => {
-    const newMode = !isDarkMode
-    setIsDarkMode(newMode)
-
-    if (newMode) {
-      document.documentElement.classList.add("dark")
-      localStorage.setItem("theme", "dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-      localStorage.setItem("theme", "light")
-    }
+    setIsDarkMode(!isDarkMode)
   }
 
   // Function to start the battle animation
@@ -222,18 +194,25 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ domain }),
+        body: JSON.stringify({ domain: domain.trim() }),
       })
 
-      const data = await response.json()
-      console.log("API Response:", data)
+      // Improved error handling for JSON parsing
+      let data
+      try {
+        data = await response.json()
+        console.log("API Response:", data)
+      } catch (e) {
+        console.error("JSON parsing error:", e)
+        throw new Error("Failed to parse server response. The server may be overloaded.")
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || "Failed to check domain")
+        throw new Error(data.error || data.details || `HTTP error! status: ${response.status}`)
       }
 
       if (!data.success) {
-        throw new Error("API request failed")
+        throw new Error(data.error || "API request failed")
       }
 
       // Stop the timer when results are received
@@ -250,18 +229,18 @@ export default function Home() {
       })
 
       // Check if we have results
-      if (data.results && Array.isArray(data.results)) {
-        if (data.results.length === 0) {
+      if (data.messageChunks && Array.isArray(data.messageChunks)) {
+        if (data.messageChunks.length === 0) {
           setError("No results found for this domain in the Wayback Machine archive.")
         } else {
           // Ensure we're setting the results correctly
-          console.log("Setting results:", data.results)
-          setResults(data.results)
+          console.log("Setting results from messageChunks:", data.messageChunks)
+          setResults(data.messageChunks)
         }
-      } else if (data.messageChunks && Array.isArray(data.messageChunks)) {
-        // Fallback to messageChunks if results is not available
-        console.log("Using messageChunks:", data.messageChunks)
-        setResults(data.messageChunks)
+      } else if (data.logs && Array.isArray(data.logs)) {
+        // Fallback to logs if messageChunks is not available
+        console.log("Using logs as fallback:", data.logs)
+        setResults(data.logs)
       } else {
         throw new Error("Invalid response format from server")
       }
@@ -274,7 +253,7 @@ export default function Home() {
       }, 100)
     } catch (err) {
       console.error("Error:", err)
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : "An unexpected error occurred")
 
       // Stop the timer on error
       stopTimer()
@@ -322,7 +301,7 @@ export default function Home() {
 
     // Alerts and notifications
     notFound: isDarkMode ? "#ef4444" : "#dc2626",
-    notFoundBg: isDarkMode ? "rgba(239, 68, 68, 0.1)" : "rgba(220, 38, 38, 0.05)",
+    notFoundBg: isDarkMode ? "rgba(239, 68, 44, 0.1)" : "rgba(220, 38, 38, 0.05)",
     success: isDarkMode ? "#10b981" : "#059669",
     successBg: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(5, 150, 105, 0.05)",
 
@@ -740,6 +719,7 @@ export default function Home() {
           ? "radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)"
           : "none",
       }}
+      className={isDarkMode ? "dark" : ""}
     >
       <div
         style={{

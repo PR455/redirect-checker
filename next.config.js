@@ -6,28 +6,19 @@ const nextConfig = {
     domains: ["ik.imagekit.io"],
     unoptimized: true,
   },
-  // Tambahkan konfigurasi untuk mengatasi masalah CORS
-  async headers() {
-    return [
-      {
-        // Terapkan header ini ke semua route
-        source: "/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET,DELETE,PATCH,POST,PUT" },
-          {
-            key: "Access-Control-Allow-Headers",
-            value:
-              "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
-          },
-        ],
-      },
-    ]
-  },
-  // Tambahkan konfigurasi untuk mengatasi masalah dengan API route
-  experimental: {
-    serverComponentsExternalPackages: [],
+  // Konfigurasi webpack yang lebih sederhana
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Konfigurasi untuk client-side
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      }
+    }
+
+    // Hapus konfigurasi ignore-loader yang menyebabkan masalah
+    return config
   },
 }
 
