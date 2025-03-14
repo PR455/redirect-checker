@@ -55,6 +55,15 @@ export default function Home() {
     }
   }, [])
 
+  // Apply dark mode class to HTML element
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
+  }, [isDarkMode])
+
   // Cleanup timer interval when component unmounts
   useEffect(() => {
     return () => {
@@ -712,7 +721,6 @@ export default function Home() {
           ? "radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)"
           : "none",
       }}
-      className={isDarkMode ? "dark" : ""}
     >
       <div
         style={{

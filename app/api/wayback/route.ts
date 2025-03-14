@@ -1,32 +1,32 @@
 import { NextResponse } from "next/server"
-import { checkDomainHistory } from "@/lib/wayback-api"
 
 export async function POST(request: Request) {
   try {
-    const { domain } = await request.json()
+    const body = await request.json()
+    const { domain } = body
 
     if (!domain) {
-      return NextResponse.json({ error: "Domain is required" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "Domain is required" }, { status: 400 })
     }
 
-    console.log(`Processing domain: ${domain}`)
+    // Import wayback-api.js secara dinamis
+    const waybackApi = await import("@/lib/wayback-api")
 
-    // Correctly call the checkDomainHistory function from wayback-api.js
-    const result = await checkDomainHistory(domain)
+    // Panggil fungsi checkDomainHistory
+    const result = await waybackApi.checkDomainHistory(domain)
 
-    // Ensure we're returning the logs and messageChunks in the response
     return NextResponse.json({
       success: true,
-      results: result.logs,
-      messageChunks: result.messageChunks,
+      results: result.messageChunks,
+      executionTime: result.executionTime,
     })
   } catch (error) {
-    console.error("Error in wayback API route:", error)
+    console.error("API Error:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to check domain",
-        details: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : "An unknown error occurred",
+        details: "Failed to check domain with Wayback Machine",
       },
       { status: 500 },
     )
